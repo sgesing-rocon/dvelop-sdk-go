@@ -10,51 +10,43 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"time"
 )
 
-type CustomModelList struct {
-	Items []CustomModel `json:"value"`
+type defaultClient struct {
+	baseUriFromContext   func(ctx context.Context) (string, error)
+	AuthSessionIdFromCtx func(ctx context.Context) (string, error)
+	HttpClient           *http.Client
 }
 
-type CustomModel struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	State       string `json:"state"`
-	Description string `json:"description"`
+func (c *defaultClient) SetAuthSessionFromContextFunction(f func(ctx context.Context) (string, error)) error {
+	if f == nil {
+		return errors.New("function for auth session retrieval must not be nil")
+	}
+
+	c.AuthSessionIdFromCtx = f
+	return nil
 }
 
-type CreateCustomModelParams struct {
-	Name        string `json:"name"`
-	State       string `json:"state"`
-	Description string `json:"description"`
+func (c *defaultClient) SetHttpClient(client *http.Client) error {
+	if client == nil {
+		return errors.New("httpClient must not be nil")
+	}
+
+	c.HttpClient = client
+	return nil
 }
 
-type EntityType struct {
-	Id         string     `json:"id"`
-	Name       string     `json:"name"`
-	PluralName string     `json:"pluralName"`
-	State      string     `json:"state"`
-	Key        Key        `json:"key"`
-	Properties []Property `json:"properties"`
+func NewClient(baseUriFromContext func(ctx context.Context) (string, error)) *defaultClient {
+	c := &defaultClient{
+		baseUriFromContext: baseUriFromContext,
+		HttpClient:         &http.Client{Timeout: 10 * time.Second},
+	}
+
+	return c
 }
 
-type Property struct {
-	Id       string `json:"id"`
-	Name     string `json:"name"`
-	Required bool   `json:"required"`
-	Indexed  bool   `json:"indexed"`
-	Type     string `json:"type"`
-	State    string `json:"state"`
-}
-
-type Key struct {
-	Id    string `json:"id"`
-	Name  string `json:"name"`
-	Type  string `json:"type"`
-	State string `json:"state"`
-}
-
-func (c *client) GetCustomModels(ctx context.Context) ([]CustomModel, error) {
+func (c *defaultClient) GetCustomModels(ctx context.Context) ([]CustomModel, error) {
 	baseUri, authSessionId, err := c.getContextValues(ctx)
 	if err != nil {
 		return nil, err
@@ -74,7 +66,7 @@ func (c *client) GetCustomModels(ctx context.Context) ([]CustomModel, error) {
 		},
 	}
 
-	response, err := c.httpClient.Do(req)
+	response, err := c.HttpClient.Do(req)
 	if err != nil {
 		log.Fatalf("error sending request to business objects. %+v", err)
 	}
@@ -89,7 +81,7 @@ func (c *client) GetCustomModels(ctx context.Context) ([]CustomModel, error) {
 	return modelList.Items, nil
 }
 
-func (c *client) GetCustomModel(ctx context.Context, id string) (CustomModel, error) {
+func (c *defaultClient) GetCustomModel(ctx context.Context, id string) (CustomModel, error) {
 	baseUri, authSessionId, err := c.getContextValues(ctx)
 	if err != nil {
 		return CustomModel{}, err
@@ -109,7 +101,7 @@ func (c *client) GetCustomModel(ctx context.Context, id string) (CustomModel, er
 		},
 	}
 
-	response, err := c.httpClient.Do(req)
+	response, err := c.HttpClient.Do(req)
 	if err != nil {
 		log.Fatalf("error sending request to business objects. %+v", err)
 	}
@@ -124,7 +116,7 @@ func (c *client) GetCustomModel(ctx context.Context, id string) (CustomModel, er
 	return model, nil
 }
 
-func (c *client) CreateCustomModel(ctx context.Context, params CreateCustomModelParams) (string, error) {
+func (c *defaultClient) CreateCustomModel(ctx context.Context, params CreateCustomModelParams) (string, error) {
 	baseUri, authSessionId, err := c.getContextValues(ctx)
 	if err != nil {
 		return "", err
@@ -152,7 +144,7 @@ func (c *client) CreateCustomModel(ctx context.Context, params CreateCustomModel
 		Body: io.NopCloser(bytes.NewReader(requestBody)),
 	}
 
-	response, err := c.httpClient.Do(req)
+	response, err := c.HttpClient.Do(req)
 	if err != nil {
 		return "", err
 	}
@@ -174,7 +166,7 @@ func (c *client) CreateCustomModel(ctx context.Context, params CreateCustomModel
 	return model.Id, nil
 }
 
-func (c *client) UpdateCustomModel(ctx context.Context, params CustomModel) error {
+func (c *defaultClient) UpdateCustomModel(ctx context.Context, params CustomModel) error {
 	baseUri, authSessionId, err := c.getContextValues(ctx)
 	if err != nil {
 		return err
@@ -202,7 +194,7 @@ func (c *client) UpdateCustomModel(ctx context.Context, params CustomModel) erro
 		Body: io.NopCloser(bytes.NewReader(requestBody)),
 	}
 
-	response, err := c.httpClient.Do(req)
+	response, err := c.HttpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -224,7 +216,7 @@ func (c *client) UpdateCustomModel(ctx context.Context, params CustomModel) erro
 	return nil
 }
 
-func (c *client) PartiallyUpdateCustomModel(ctx context.Context, params CustomModel) error {
+func (c *defaultClient) PartiallyUpdateCustomModel(ctx context.Context, params CustomModel) error {
 	baseUri, authSessionId, err := c.getContextValues(ctx)
 	if err != nil {
 		return err
@@ -252,7 +244,7 @@ func (c *client) PartiallyUpdateCustomModel(ctx context.Context, params CustomMo
 		Body: io.NopCloser(bytes.NewReader(requestBody)),
 	}
 
-	response, err := c.httpClient.Do(req)
+	response, err := c.HttpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -274,7 +266,7 @@ func (c *client) PartiallyUpdateCustomModel(ctx context.Context, params CustomMo
 	return nil
 }
 
-func (c *client) DeleteCustomModel(ctx context.Context, id string) error {
+func (c *defaultClient) DeleteCustomModel(ctx context.Context, id string) error {
 	baseUri, authSessionId, err := c.getContextValues(ctx)
 	if err != nil {
 		return err
@@ -295,7 +287,7 @@ func (c *client) DeleteCustomModel(ctx context.Context, id string) error {
 		},
 	}
 
-	response, err := c.httpClient.Do(req)
+	response, err := c.HttpClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -310,12 +302,12 @@ func (c *client) DeleteCustomModel(ctx context.Context, id string) error {
 	return nil
 }
 
-func (c *client) getContextValues(ctx context.Context) (string, string, error) {
+func (c *defaultClient) getContextValues(ctx context.Context) (string, string, error) {
 	baseUri, err := c.baseUriFromContext(ctx)
 	if err != nil || baseUri == "" {
 		return "", "", errors.New("missing base uri")
 	}
-	authSessionId, err := c.authSessionIdFromCtx(ctx)
+	authSessionId, err := c.AuthSessionIdFromCtx(ctx)
 	if err != nil || authSessionId == "" {
 		return "", "", errors.New("missing authSessionId")
 	}
