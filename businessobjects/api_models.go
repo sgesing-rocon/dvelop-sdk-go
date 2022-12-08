@@ -1,22 +1,5 @@
 package businessobjects
 
-type CustomModelList struct {
-	Items []CustomModel `json:"value"`
-}
-
-type CustomModel struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	State       string `json:"state"`
-	Description string `json:"description"`
-}
-
-type CreateCustomModelParams struct {
-	Name        string `json:"name"`
-	State       string `json:"state"`
-	Description string `json:"description"`
-}
-
 type EntityType struct {
 	Id         string     `json:"id"`
 	Name       string     `json:"name"`
