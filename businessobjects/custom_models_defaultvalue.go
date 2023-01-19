@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"time"
 )
 
@@ -37,7 +38,6 @@ type CustomModelList struct {
 }
 
 func (c *DefaultClient) GetCustomModels(ctx context.Context, request GetCustomModelsRequest) ([]CustomModel, error) {
-
 	baseUri, authSessionId, err := c.getContextValues(ctx, request.SystemBaseUri, request.AuthSessionId)
 	if err != nil {
 		return nil, err
@@ -60,6 +60,9 @@ func (c *DefaultClient) GetCustomModels(ctx context.Context, request GetCustomMo
 	response, err := c.HttpClient.Do(req)
 	if err != nil {
 		log.Fatalf("error sending request to business objects. %+v", err)
+	}
+	if !isSuccessStatusCode(response.StatusCode) {
+		return nil, errors.New("http request failed with status code: " + strconv.Itoa(response.StatusCode))
 	}
 	defer response.Body.Close()
 
@@ -108,6 +111,9 @@ func (c *DefaultClient) GetCustomModel(ctx context.Context, request GetCustomMod
 	response, err := c.HttpClient.Do(req)
 	if err != nil {
 		log.Fatalf("error sending request to business objects. %+v", err)
+	}
+	if !isSuccessStatusCode(response.StatusCode) {
+		return CustomModel{}, errors.New("http request failed with status code: " + strconv.Itoa(response.StatusCode))
 	}
 	defer response.Body.Close()
 
@@ -159,6 +165,9 @@ func (c *DefaultClient) CreateCustomModel(ctx context.Context, request CreateCus
 	response, err := c.HttpClient.Do(req)
 	if err != nil {
 		return "", err
+	}
+	if !isSuccessStatusCode(response.StatusCode) {
+		return "", errors.New("http request failed with status code: " + strconv.Itoa(response.StatusCode))
 	}
 	defer response.Body.Close()
 
@@ -219,19 +228,8 @@ func (c *DefaultClient) UpdateCustomModel(ctx context.Context, request UpdateCus
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close()
-
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return err
-	}
-	stringBody := string(body)
-	fmt.Println(stringBody)
-
-	model := CustomModel{}
-	err = json.Unmarshal(body, &model)
-	if err != nil {
-		return fmt.Errorf("error parsing response from business objects update custom models - error: %v", err.Error())
+	if !isSuccessStatusCode(response.StatusCode) {
+		return errors.New("http request failed with status code: " + strconv.Itoa(response.StatusCode))
 	}
 
 	return nil
@@ -278,19 +276,8 @@ func (c *DefaultClient) PartiallyUpdateCustomModel(ctx context.Context, request 
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close()
-
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return err
-	}
-	stringBody := string(body)
-	fmt.Println(stringBody)
-
-	model := CustomModel{}
-	err = json.Unmarshal(body, &model)
-	if err != nil {
-		return fmt.Errorf("error parsing response from business objects update custom models - error: %v", err.Error())
+	if !isSuccessStatusCode(response.StatusCode) {
+		return errors.New("http request failed with status code: " + strconv.Itoa(response.StatusCode))
 	}
 
 	return nil
@@ -327,19 +314,14 @@ func (c *DefaultClient) DeleteCustomModel(ctx context.Context, request DeleteCus
 	if err != nil {
 		return err
 	}
-	defer response.Body.Close()
-
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return err
+	if !isSuccessStatusCode(response.StatusCode) {
+		return errors.New("http request failed with status code: " + strconv.Itoa(response.StatusCode))
 	}
-	stringBody := string(body)
-	fmt.Println(stringBody)
+
 	return nil
 }
 
 func (c *DefaultClient) getContextValues(ctx context.Context, systemBaseUriFromRequest string, authSessionIdFromRequest string) (string, string, error) {
-
 	var systemBaseUri string
 	var authSessionId string
 	var err error
@@ -367,4 +349,8 @@ func (c *DefaultClient) getContextValues(ctx context.Context, systemBaseUriFromR
 	}
 
 	return systemBaseUri, authSessionId, nil
+}
+
+func isSuccessStatusCode(statusCode int) bool {
+	return statusCode >= 200 && statusCode < 300
 }
