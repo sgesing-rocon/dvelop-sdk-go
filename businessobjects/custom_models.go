@@ -13,12 +13,46 @@ import (
 	"strconv"
 )
 
+type FullCustomModelDto struct {
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	State       string `json:"state"`
+	EntityTypes []struct {
+		PluralName  string `json:"pluralName"`
+		Id          string `json:"id"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		State       string `json:"state"`
+		Key         struct {
+			Id          string `json:"id"`
+			Name        string `json:"name"`
+			Description string `json:"description"`
+			State       string `json:"state"`
+			Type        string `json:"type"`
+		} `json:"key"`
+		Properties []struct {
+			Id          string `json:"id"`
+			Name        string `json:"name"`
+			Description string `json:"description"`
+			State       string `json:"state"`
+			Type        string `json:"type"`
+			Required    bool   `json:"required"`
+			Indexed     bool   `json:"indexed"`
+		} `json:"properties"`
+	} `json:"entityTypes"`
+}
+
+type customModelList struct {
+	Items []FullCustomModelDto `json:"value"`
+}
+
 type GetCustomModelsRequest struct {
 	SystemBaseUri string
 	AuthSessionId string
 }
 
-func (c *DefaultClient) GetCustomModels(ctx context.Context, request GetCustomModelsRequest) ([]CustomModel, error) {
+func (c *DefaultClient) GetCustomModels(ctx context.Context, request GetCustomModelsRequest) ([]FullCustomModelDto, error) {
 	baseUri, authSessionId, err := c.getContextValues(ctx, request.SystemBaseUri, request.AuthSessionId)
 	if err != nil {
 		return nil, err
@@ -47,7 +81,7 @@ func (c *DefaultClient) GetCustomModels(ctx context.Context, request GetCustomMo
 	}
 	defer response.Body.Close()
 
-	modelList := CustomModelList{}
+	modelList := customModelList{}
 	err = json.NewDecoder(response.Body).Decode(&modelList)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing response from business objects list custom models - error: %v", err.Error())
@@ -62,15 +96,15 @@ type GetCustomModelRequest struct {
 	ModelId       string
 }
 
-func (c *DefaultClient) GetCustomModel(ctx context.Context, request GetCustomModelRequest) (CustomModel, error) {
+func (c *DefaultClient) GetCustomModel(ctx context.Context, request GetCustomModelRequest) (FullCustomModelDto, error) {
 	baseUri, authSessionId, err := c.getContextValues(ctx, request.SystemBaseUri, request.AuthSessionId)
 	if err != nil {
-		return CustomModel{}, err
+		return FullCustomModelDto{}, err
 	}
 
 	uri, err := url.Parse(fmt.Sprintf("%v/businessobjects/core/models/customModels(%v)", baseUri, request.ModelId))
 	if err != nil {
-		return CustomModel{}, fmt.Errorf("error parsing raw url with base uri '%v' - error: %v", baseUri, err.Error())
+		return FullCustomModelDto{}, fmt.Errorf("error parsing raw url with base uri '%v' - error: %v", baseUri, err.Error())
 	}
 
 	req := &http.Request{
@@ -87,25 +121,46 @@ func (c *DefaultClient) GetCustomModel(ctx context.Context, request GetCustomMod
 		log.Fatalf("error sending request to business objects. %+v", err)
 	}
 	if !isSuccessStatusCode(response.StatusCode) {
-		return CustomModel{}, errors.New("http request failed with status code: " + strconv.Itoa(response.StatusCode))
+		return FullCustomModelDto{}, errors.New("http request failed with status code: " + strconv.Itoa(response.StatusCode))
 	}
 	defer response.Body.Close()
 
-	model := CustomModel{}
+	model := FullCustomModelDto{}
 	err = json.NewDecoder(response.Body).Decode(&model)
 	if err != nil {
-		return CustomModel{}, fmt.Errorf("error parsing response from business objects get custom models - error: %v", err.Error())
+		return FullCustomModelDto{}, fmt.Errorf("error parsing response from business objects get custom models - error: %v", err.Error())
 	}
 
 	return model, nil
 }
 
+type CreateCustomModelDto struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	State       string `json:"state"`
+	EntityTypes []struct {
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		PluralName  string `json:"pluralName"`
+		Key         struct {
+			Name        string `json:"name"`
+			Description string `json:"description"`
+			Type        string `json:"type"`
+		} `json:"key"`
+		Properties []struct {
+			Name        string `json:"name"`
+			Description string `json:"description"`
+			Type        string `json:"type"`
+			Required    bool   `json:"required"`
+			Indexed     bool   `json:"indexed"`
+		} `json:"properties,omitempty"`
+	} `json:"entityTypes,omitempty"`
+}
+
 type CreateCustomModelRequest struct {
-	SystemBaseUri string `json:"-"`
-	AuthSessionId string `json:"-"`
-	Name          string `json:"name"`
-	State         string `json:"state"`
-	Description   string `json:"description"`
+	SystemBaseUri string
+	AuthSessionId string
+	CustomModel   CreateCustomModelDto
 }
 
 func (c *DefaultClient) CreateCustomModel(ctx context.Context, request CreateCustomModelRequest) (string, error) {
@@ -119,9 +174,9 @@ func (c *DefaultClient) CreateCustomModel(ctx context.Context, request CreateCus
 		return "", fmt.Errorf("error parsing raw url with base uri '%v' - error: %v", baseUri, err.Error())
 	}
 
-	requestBody, err := json.Marshal(request)
+	requestBody, err := json.Marshal(request.CustomModel)
 	if err != nil {
-		return "", fmt.Errorf("error marshalling body: %+v", request)
+		return "", fmt.Errorf("error marshalling body: %+v", request.CustomModel)
 	}
 
 	req := &http.Request{
@@ -152,7 +207,7 @@ func (c *DefaultClient) CreateCustomModel(ctx context.Context, request CreateCus
 	stringBody := string(body)
 	fmt.Println(stringBody)
 
-	model := CustomModel{}
+	model := FullCustomModelDto{}
 	err = json.Unmarshal(body, &model)
 	if err != nil {
 		return "", fmt.Errorf("error parsing response from business objects create custom models - error: %v", err.Error())
@@ -161,13 +216,37 @@ func (c *DefaultClient) CreateCustomModel(ctx context.Context, request CreateCus
 	return model.Id, nil
 }
 
+type UpdateCustomModelDto struct {
+	Id          string `json:"id"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	State       string `json:"state"`
+	EntityTypes []struct {
+		PluralName  string `json:"pluralName"`
+		Id          string `json:"id"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+		Key         struct {
+			Id          string `json:"id"`
+			Name        string `json:"name"`
+			Description string `json:"description"`
+			Type        string `json:"type"`
+		} `json:"key"`
+		Properties []struct {
+			Id          string `json:"id"`
+			Name        string `json:"name"`
+			Description string `json:"description"`
+			Type        string `json:"type"`
+			Required    bool   `json:"required"`
+			Indexed     bool   `json:"indexed"`
+		} `json:"properties,omitempty"`
+	} `json:"entityTypes,omitempty"`
+}
+
 type UpdateCustomModelRequest struct {
-	SystemBaseUri string `json:"-"`
-	AuthSessionId string `json:"-"`
-	ModelId       string `json:"id"`
-	Name          string `json:"name"`
-	State         string `json:"state"`
-	Description   string `json:"description"`
+	SystemBaseUri string
+	AuthSessionId string
+	CustomModel   UpdateCustomModelDto
 }
 
 func (c *DefaultClient) UpdateCustomModel(ctx context.Context, request UpdateCustomModelRequest) error {
@@ -176,66 +255,18 @@ func (c *DefaultClient) UpdateCustomModel(ctx context.Context, request UpdateCus
 		return err
 	}
 
-	uri, err := url.Parse(fmt.Sprintf("%v/businessobjects/core/models/customModels(%v)", baseUri, request.ModelId))
+	uri, err := url.Parse(fmt.Sprintf("%v/businessobjects/core/models/customModels(%v)", baseUri, request.CustomModel.Id))
 	if err != nil {
 		return fmt.Errorf("error parsing raw url with base uri '%v' - error: %v", baseUri, err.Error())
 	}
 
-	requestBody, err := json.Marshal(request)
+	requestBody, err := json.Marshal(request.CustomModel)
 	if err != nil {
 		return fmt.Errorf("error marshalling body: %+v", request)
 	}
 
 	req := &http.Request{
 		Method: http.MethodPut,
-		URL:    uri,
-		Header: map[string][]string{
-			"Accept":        {"application/json"},
-			"Authorization": {"Bearer " + authSessionId},
-			"Origin":        {baseUri},
-			"Content-Type":  {"application/json"},
-		},
-		Body: io.NopCloser(bytes.NewReader(requestBody)),
-	}
-
-	response, err := c.HttpClient.Do(req)
-	if err != nil {
-		return err
-	}
-	if !isSuccessStatusCode(response.StatusCode) {
-		return errors.New("http request failed with status code: " + strconv.Itoa(response.StatusCode))
-	}
-
-	return nil
-}
-
-type PartiallyUpdateCustomModelRequest struct {
-	SystemBaseUri string `json:"-"`
-	AuthSessionId string `json:"-"`
-	ModelId       string `json:"id"`
-	Name          string `json:"name,omitempty"`
-	State         string `json:"state,omitempty"`
-	Description   string `json:"description,omitempty"`
-}
-
-func (c *DefaultClient) PartiallyUpdateCustomModel(ctx context.Context, request PartiallyUpdateCustomModelRequest) error {
-	baseUri, authSessionId, err := c.getContextValues(ctx, request.SystemBaseUri, request.AuthSessionId)
-	if err != nil {
-		return err
-	}
-
-	uri, err := url.Parse(fmt.Sprintf("%v/businessobjects/core/models/customModels(%v)", baseUri, request.ModelId))
-	if err != nil {
-		return fmt.Errorf("error parsing raw url with base uri '%v' - error: %v", baseUri, err.Error())
-	}
-
-	requestBody, err := json.Marshal(request)
-	if err != nil {
-		return fmt.Errorf("error marshalling body: %+v", request)
-	}
-
-	req := &http.Request{
-		Method: http.MethodPatch,
 		URL:    uri,
 		Header: map[string][]string{
 			"Accept":        {"application/json"},
