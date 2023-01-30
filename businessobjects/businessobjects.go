@@ -51,6 +51,38 @@ func (c *DefaultClient) getContextValues(ctx context.Context, systemBaseUriFromR
 	return systemBaseUri, authSessionId, nil
 }
 
+type BusinessObjectsError struct {
+	Code    string `json:"code"`
+	Message string `json:"message"`
+	Details []struct {
+		Code    string `json:"code"`
+		Message string `json:"message"`
+	} `json:"details"`
+	InnerError struct {
+		Timestamp time.Time `json:"timestamp"`
+		RequestID string    `json:"requestId"`
+	} `json:"innerError"`
+}
+
+type BusinessObjectsErrorResponse struct {
+	Error BusinessObjectsError `json:"error"`
+}
+
+func (e BusinessObjectsError) Error() string {
+
+	errString := e.Message + " Details: "
+
+	for _, d := range e.Details {
+		errString += d.Message + "(Code: " + d.Code + "), "
+	}
+
+	return errString
+}
+
 func isSuccessStatusCode(statusCode int) bool {
 	return statusCode >= 200 && statusCode < 300
+}
+
+func isBadInputStatusCode(statusCode int) bool {
+	return statusCode >= 400 && statusCode < 500
 }
