@@ -155,11 +155,11 @@ type CreateCustomModelDtoKey struct {
 }
 
 type CreateCustomModelDtoEntityType struct {
-	Name        string                       `json:"name"`
-	Description string                       `json:"description"`
-	PluralName  string                       `json:"pluralName"`
-	Key         CreateCustomModelDtoKey      `json:"key"`
-	Properties  CreateCustomModelDtoProperty `json:"properties,omitempty"`
+	Name        string                         `json:"name"`
+	Description string                         `json:"description"`
+	PluralName  string                         `json:"pluralName"`
+	Key         CreateCustomModelDtoKey        `json:"key"`
+	Properties  []CreateCustomModelDtoProperty `json:"properties,omitempty"`
 }
 
 type CreateCustomModelDto struct {
@@ -175,20 +175,20 @@ type CreateCustomModelRequest struct {
 	CustomModel   CreateCustomModelDto
 }
 
-func (c *DefaultClient) CreateCustomModel(ctx context.Context, request CreateCustomModelRequest) (string, error) {
+func (c *DefaultClient) CreateCustomModel(ctx context.Context, request CreateCustomModelRequest) (CustomModel, error) {
 	baseUri, authSessionId, err := c.getContextValues(ctx, request.SystemBaseUri, request.AuthSessionId)
 	if err != nil {
-		return "", err
+		return CustomModel{}, err
 	}
 
 	uri, err := url.Parse(fmt.Sprintf("%v/businessobjects/core/models/customModels", baseUri))
 	if err != nil {
-		return "", fmt.Errorf("error parsing raw url with base uri '%v' - error: %v", baseUri, err.Error())
+		return CustomModel{}, fmt.Errorf("error parsing raw url with base uri '%v' - error: %v", baseUri, err.Error())
 	}
 
 	requestBody, err := json.Marshal(request.CustomModel)
 	if err != nil {
-		return "", fmt.Errorf("error marshalling body: %+v", request.CustomModel)
+		return CustomModel{}, fmt.Errorf("error marshalling body: %+v", request.CustomModel)
 	}
 
 	req := &http.Request{
@@ -205,12 +205,12 @@ func (c *DefaultClient) CreateCustomModel(ctx context.Context, request CreateCus
 
 	response, err := c.HttpClient.Do(req)
 	if err != nil { // network,timout,etc - not bad status code
-		return "", err
+		return CustomModel{}, err
 	}
 
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
-		return "", err
+		return CustomModel{}, err
 	}
 	defer response.Body.Close()
 
@@ -222,19 +222,19 @@ func (c *DefaultClient) CreateCustomModel(ctx context.Context, request CreateCus
 		errResponseModel := BusinessObjectsErrorResponse{}
 		err = json.Unmarshal(body, &errResponseModel)
 		if err != nil {
-			return "", fmt.Errorf("error parsing error-response from business objects - error: %v", err.Error())
+			return CustomModel{}, fmt.Errorf("error parsing error-response from business objects - error: %v", err.Error())
 		}
 
-		return "", errResponseModel.Error
+		return CustomModel{}, errResponseModel.Error
 	}
 
 	model := CustomModel{}
 	err = json.Unmarshal(body, &model)
 	if err != nil {
-		return "", fmt.Errorf("error parsing response from business objects create custom models - error: %v", err.Error())
+		return CustomModel{}, fmt.Errorf("error parsing response from business objects create custom models - error: %v", err.Error())
 	}
 
-	return model.Id, nil
+	return model, nil
 }
 
 type UpdateCustomModelDtoProperty struct {
@@ -254,12 +254,12 @@ type UpdateCustomModelDtoKey struct {
 }
 
 type UpdateCustomModelDtoEntityType struct {
-	Id          string                       `json:"id"`
-	Name        string                       `json:"name"`
-	Description string                       `json:"description"`
-	PluralName  string                       `json:"pluralName"`
-	Key         CreateCustomModelDtoKey      `json:"key"`
-	Properties  CreateCustomModelDtoProperty `json:"properties,omitempty"`
+	Id          string                         `json:"id"`
+	Name        string                         `json:"name"`
+	Description string                         `json:"description"`
+	PluralName  string                         `json:"pluralName"`
+	Key         UpdateCustomModelDtoKey        `json:"key"`
+	Properties  []UpdateCustomModelDtoProperty `json:"properties,omitempty"`
 }
 
 type UpdateCustomModelDto struct {
@@ -267,7 +267,7 @@ type UpdateCustomModelDto struct {
 	Name        string                           `json:"name"`
 	Description string                           `json:"description"`
 	State       string                           `json:"state"`
-	EntityTypes []CreateCustomModelDtoEntityType `json:"entityTypes,omitempty"`
+	EntityTypes []UpdateCustomModelDtoEntityType `json:"entityTypes,omitempty"`
 }
 
 type UpdateCustomModelRequest struct {
