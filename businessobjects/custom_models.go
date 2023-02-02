@@ -308,8 +308,21 @@ func (c *DefaultClient) UpdateCustomModel(ctx context.Context, request UpdateCus
 	if err != nil {
 		return err
 	}
+
 	if !isSuccessStatusCode(response.StatusCode) {
-		return errors.New("http request failed with status code: " + strconv.Itoa(response.StatusCode))
+		body, err := io.ReadAll(response.Body)
+		if err != nil {
+			return err
+		}
+		defer response.Body.Close()
+
+		errResponseModel := BusinessObjectsErrorResponse{}
+		err = json.Unmarshal(body, &errResponseModel)
+		if err != nil {
+			return fmt.Errorf("error parsing error-response from business objects - error: %v", err.Error())
+		}
+
+		return errResponseModel.Error
 	}
 
 	return nil
@@ -347,7 +360,19 @@ func (c *DefaultClient) DeleteCustomModel(ctx context.Context, request DeleteCus
 		return err
 	}
 	if !isSuccessStatusCode(response.StatusCode) {
-		return errors.New("http request failed with status code: " + strconv.Itoa(response.StatusCode))
+		body, err := io.ReadAll(response.Body)
+		if err != nil {
+			return err
+		}
+		defer response.Body.Close()
+
+		errResponseModel := BusinessObjectsErrorResponse{}
+		err = json.Unmarshal(body, &errResponseModel)
+		if err != nil {
+			return fmt.Errorf("error parsing error-response from business objects - error: %v", err.Error())
+		}
+
+		return errResponseModel.Error
 	}
 
 	return nil
