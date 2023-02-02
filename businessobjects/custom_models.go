@@ -141,31 +141,31 @@ func (c *DefaultClient) ListCustomModels(ctx context.Context, request ListCustom
 }
 
 type CreateCustomModelDtoProperty struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Type        string `json:"type"`
+	Name        string `json:"name,omitempty"`
+	Description string `json:"description,omitempty"`
+	Type        string `json:"type,omitempty"`
 	Required    bool   `json:"required"`
 	Indexed     bool   `json:"indexed"`
 }
 
 type CreateCustomModelDtoKey struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Type        string `json:"type"`
+	Name        string `json:"name,omitempty"`
+	Description string `json:"description,omitempty"`
+	Type        string `json:"type,omitempty"`
 }
 
 type CreateCustomModelDtoEntityType struct {
-	Name        string                         `json:"name"`
-	Description string                         `json:"description"`
-	PluralName  string                         `json:"pluralName"`
-	Key         CreateCustomModelDtoKey        `json:"key"`
+	Name        string                         `json:"name,omitempty"`
+	Description string                         `json:"description,omitempty"`
+	PluralName  string                         `json:"pluralName,omitempty"`
+	Key         CreateCustomModelDtoKey        `json:"key,omitempty"`
 	Properties  []CreateCustomModelDtoProperty `json:"properties,omitempty"`
 }
 
 type CreateCustomModelDto struct {
-	Name        string                           `json:"name"`
-	Description string                           `json:"description"`
-	State       string                           `json:"state"`
+	Name        string                           `json:"name,omitempty"`
+	Description string                           `json:"description,omitempty"`
+	State       string                           `json:"state,omitempty"`
 	EntityTypes []CreateCustomModelDtoEntityType `json:"entityTypes,omitempty"`
 }
 
@@ -218,7 +218,6 @@ func (c *DefaultClient) CreateCustomModel(ctx context.Context, request CreateCus
 	fmt.Println(stringBody)
 
 	if !isSuccessStatusCode(response.StatusCode) {
-
 		errResponseModel := BusinessObjectsErrorResponse{}
 		err = json.Unmarshal(body, &errResponseModel)
 		if err != nil {
@@ -238,35 +237,35 @@ func (c *DefaultClient) CreateCustomModel(ctx context.Context, request CreateCus
 }
 
 type UpdateCustomModelDtoProperty struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Type        string `json:"type"`
+	Id          string `json:"id,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Description string `json:"description,omitempty"`
+	Type        string `json:"type,omitempty"`
 	Required    bool   `json:"required"`
 	Indexed     bool   `json:"indexed"`
 }
 
 type UpdateCustomModelDtoKey struct {
-	Id          string `json:"id"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Type        string `json:"type"`
+	Id          string `json:"id,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Description string `json:"description,omitempty"`
+	Type        string `json:"type,omitempty"`
 }
 
 type UpdateCustomModelDtoEntityType struct {
-	Id          string                         `json:"id"`
-	Name        string                         `json:"name"`
-	Description string                         `json:"description"`
-	PluralName  string                         `json:"pluralName"`
-	Key         UpdateCustomModelDtoKey        `json:"key"`
+	Id          string                         `json:"id,omitempty"`
+	Name        string                         `json:"name,omitempty"`
+	Description string                         `json:"description,omitempty"`
+	PluralName  string                         `json:"pluralName,omitempty"`
+	Key         UpdateCustomModelDtoKey        `json:"key,omitempty"`
 	Properties  []UpdateCustomModelDtoProperty `json:"properties,omitempty"`
 }
 
 type UpdateCustomModelDto struct {
-	Id          string                           `json:"id"`
-	Name        string                           `json:"name"`
-	Description string                           `json:"description"`
-	State       string                           `json:"state"`
+	Id          string                           `json:"id,omitempty"`
+	Name        string                           `json:"name,omitempty"`
+	Description string                           `json:"description,omitempty"`
+	State       string                           `json:"state,omitempty"`
 	EntityTypes []UpdateCustomModelDtoEntityType `json:"entityTypes,omitempty"`
 }
 
